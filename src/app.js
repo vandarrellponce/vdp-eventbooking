@@ -1,41 +1,65 @@
-import express from 'express'
-import dotenv from 'dotenv'
-import expressGraphql from 'express-graphql'
-import { buildSchema } from 'graphql'
+import express from 'express';
+import dotenv from 'dotenv';
+import expressGraphql from 'express-graphql';
+import { buildSchema } from 'graphql';
 
-const app = express()
+const events = [];
 
-dotenv.config()
-app.use(express.json())
+const app = express();
 
-const graphqlHttp = expressGraphql.graphqlHTTP
+dotenv.config();
+app.use(express.json());
+
+const graphqlHttp = expressGraphql.graphqlHTTP;
 app.use(
-	'/graphql',
-	graphqlHttp({
-		schema: buildSchema(`
-            type RootQuery{
-                events: [String!]!
+  '/graphql',
+  graphqlHttp({
+    schema: buildSchema(`
+            type Event {
+                _id: ID!
+                title: String!
+                description: String!
+                price: Float!
+                date: String!                
             }
-            type RootMutation{
-                createEvent(name: String) : String
+
+            input EventInput {
+                title: String!
+                description: String!
+                price: Float!
+                date: String!
+            }
+
+            type RootQuery {
+                events: [Event!]!
+            }
+            type RootMutation {
+                createEvent(eventInput: EventInput) : Event
             }
             schema{
                 query: RootQuery
                 mutation: RootMutation
             }
         `),
-		rootValue: {
-			events: () => ['a', 'b'],
-			createEvent: (args) => {
-				const eventName = args.name
-				return eventName
-			},
-		},
-		graphiql: true,
-	})
-)
+    rootValue: {
+      events: () => events,
+      createEvent: (args) => {
+        const event = {
+          _id: Math.random().toString(),
+          title: args.eventInput.title,
+          description: args.eventInput.description,
+          price: +args.eventInput.price,
+          date: args.eventInput.date
+        };
+        events.push(event);
+        return event;
+      }
+    },
+    graphiql: true
+  })
+);
 
-const PORT = process.env.PORT || 5000
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-	console.log(`Server Listening on port ${PORT}`)
-})
+  console.log(`Server Listening on port ${PORT}`);
+});
