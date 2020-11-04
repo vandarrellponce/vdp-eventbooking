@@ -1,16 +1,16 @@
-import express from 'express';
-import dotenv from 'dotenv';
-import expressGraphql from 'express-graphql';
-import { buildSchema } from 'graphql';
+import express from 'express'
+import dotenv from 'dotenv'
+import expressGraphql from 'express-graphql'
+import { buildSchema } from 'graphql'
+import mongoose from 'mongoose'
+import Event from '../models/event.js'
 
-const events = [];
+const app = express()
 
-const app = express();
+dotenv.config()
+app.use(express.json())
 
-dotenv.config();
-app.use(express.json());
-
-const graphqlHttp = expressGraphql.graphqlHTTP;
+const graphqlHttp = expressGraphql.graphqlHTTP
 app.use(
   '/graphql',
   graphqlHttp({
@@ -42,24 +42,47 @@ app.use(
             }
         `),
     rootValue: {
-      events: () => events,
-      createEvent: (args) => {
-        const event = {
-          _id: Math.random().toString(),
-          title: args.eventInput.title,
-          description: args.eventInput.description,
-          price: +args.eventInput.price,
-          date: args.eventInput.date
-        };
-        events.push(event);
-        return event;
+      events: async () => {
+        try {
+          const events = await Event.find({})
+          return events
+        } catch (error) {
+          throw error
+        }
+      },
+
+      createEvent: async (args) => {
+        try {
+          const event = new Event({
+            title: args.eventInput.title,
+            description: args.eventInput.description,
+            price: args.eventInput.price,
+            date: new Date(args.eventInput.date)
+          })
+          const savedEvent = await event.save()
+          return savedEvent
+        } catch (error) {
+          console.log(error.message)
+          throw error
+        }
       }
     },
     graphiql: true
   })
-);
+)
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server Listening on port ${PORT}`);
-});
+const PORT = process.env.PORT || 5000
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+    useCreateIndex: true
+  })
+  .then((connection) => {
+    console.log('Database connected to -', connection.connection.host)
+
+    app.listen(PORT, () => {
+      console.log(`Server Listening on port ${PORT}`)
+    })
+  })
+  .catch((error) => console.log(error.message))
