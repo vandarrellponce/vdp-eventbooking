@@ -1,9 +1,9 @@
 import express from 'express'
 import dotenv from 'dotenv'
 import expressGraphql from 'express-graphql'
-import { buildSchema } from 'graphql'
 import mongoose from 'mongoose'
-import Event from '../models/event.js'
+import schema from '../graphql/schema/index.js'
+import resolvers from '../graphql/resolvers/index.js'
 
 const app = express()
 
@@ -14,59 +14,8 @@ const graphqlHttp = expressGraphql.graphqlHTTP
 app.use(
   '/graphql',
   graphqlHttp({
-    schema: buildSchema(`
-            type Event {
-                _id: ID!
-                title: String!
-                description: String!
-                price: Float!
-                date: String!                
-            }
-
-            input EventInput {
-                title: String!
-                description: String!
-                price: Float!
-                date: String!
-            }
-
-            type RootQuery {
-                events: [Event!]!
-            }
-            type RootMutation {
-                createEvent(eventInput: EventInput) : Event
-            }
-            schema{
-                query: RootQuery
-                mutation: RootMutation
-            }
-        `),
-    rootValue: {
-      events: async () => {
-        try {
-          const events = await Event.find({})
-          return events
-        } catch (error) {
-          throw error
-        }
-      },
-
-      createEvent: async (args) => {
-        try {
-          const event = new Event({
-            title: args.eventInput.title,
-            description: args.eventInput.description,
-            price: args.eventInput.price,
-            date: new Date(args.eventInput.date)
-          })
-          const savedEvent = await event.save()
-          return savedEvent
-        } catch (error) {
-          console.log(error.message)
-          throw error
-        }
-      }
-    },
+    schema: schema,
+    rootValue: resolvers,
     graphiql: true
   })
 )
