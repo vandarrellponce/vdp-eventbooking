@@ -2,8 +2,8 @@ import express from 'express'
 import dotenv from 'dotenv'
 import expressGraphql from 'express-graphql'
 import mongoose from 'mongoose'
-import schema from '../graphql/schema/index.js'
-import resolvers from '../graphql/resolvers/index.js'
+import schema from '../graphql/schema/schema.js'
+import resolvers from '../graphql/resolvers/resolvers.js'
 
 const app = express()
 

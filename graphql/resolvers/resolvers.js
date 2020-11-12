@@ -1,3 +1,4 @@
+import Booking from '../../models/booking.js'
 import Event from '../../models/event.js'
 import User from '../../models/user.js'
 
@@ -12,6 +13,20 @@ const getEvents = async (eventIds) => {
         creator: getUser.bind(this, event.creator)
       }
     })
+  } catch (error) {
+    throw error
+  }
+}
+
+const getEvent = async (eventId) => {
+  try {
+    const event = await Event.findById(eventId)
+    return {
+      ...event._doc,
+      _id: event._id,
+      date: new Date(event.date).toISOString(),
+      creator: getUser.bind(this, event.creator)
+    }
   } catch (error) {
     throw error
   }
@@ -92,6 +107,61 @@ export default {
       return { ...savedUser._doc, password: null }
     } catch (error) {
       console.log(error.message)
+      throw error
+    }
+  },
+
+  bookings: async () => {
+    try {
+      const bookings = await Booking.find({})
+      /*   .populate('event', '_id title description ')
+        .populate('user', 'email _id')
+        .execPopulate() */
+
+      return bookings.map((booking) => {
+        return {
+          ...booking._doc,
+          _id: booking._id,
+          event: getEvent.bind(this, booking.event),
+          user: getUser.bind(this, booking.user),
+          createdAt: new Date(booking.createdAt).toISOString(),
+          updatedAt: new Date(booking.updatedAt).toISOString()
+        }
+      })
+    } catch (error) {
+      throw error
+    }
+  },
+
+  bookEvent: async (args) => {
+    try {
+      const booking = new Booking({
+        event: args.eventId,
+        user: '5fa8ef01289c5a58404a22f5'
+      })
+
+      const savedBooking = await booking.save()
+      return {
+        ...savedBooking._doc,
+        _id: savedBooking._id,
+        event: await getEvent(savedBooking.event),
+        user: await getUser(savedBooking.user),
+        createdAt: new Date(savedBooking.createdAt).toISOString(),
+        updatedAt: new Date(savedBooking.updatedAt).toISOString()
+      }
+    } catch (error) {
+      throw error
+    }
+  },
+
+  cancelBooking: async (args) => {
+    try {
+      const booking = await Booking.findById(args.bookingId)
+      const event = await getEvent(booking.event)
+
+      await booking.remove()
+      return event
+    } catch (error) {
       throw error
     }
   }
